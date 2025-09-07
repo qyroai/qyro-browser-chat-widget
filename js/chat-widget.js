@@ -1,6 +1,6 @@
 (function (window, document) {
     class ChatWidget {
-        constructor({ getToken, assistantId, title, baseUrl, theme = "light" }) {
+        constructor({ getToken, assistantId, title, baseUrl, theme = "light", welcomeMessage }) {
             this.getToken = getToken;
             this.assistantId = assistantId;
             this.baseUrl = baseUrl.replace(/\/+$/, "");
@@ -8,10 +8,22 @@
             this.token = null;
             this.theme = theme;
             this.title = title || "Chat Assistant";
+            this.welcomeMessage = welcomeMessage || "👋 Hi! How can I help you today?";
 
+            this._injectFont();
             this._createLauncher();
             this._createUI();
             this._applyTheme();
+        }
+
+        _injectFont() {
+            if (!document.getElementById("lexend-font")) {
+                const link = document.createElement("link");
+                link.id = "lexend-font";
+                link.rel = "stylesheet";
+                link.href = "https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap";
+                document.head.appendChild(link);
+            }
         }
 
         async _initSession() {
@@ -30,7 +42,9 @@
                 if (!res.ok) throw new Error("Session creation failed");
                 const data = await res.json();
                 this.sessionId = data.id;
-                this._appendMessage("system", "✅ Session started. You can now chat!");
+
+                // Show welcome message (instead of the old "✅ Session started")
+                this._appendMessage("system", this.welcomeMessage);
             } catch (err) {
                 this._appendMessage("system", "❌ Failed to initialize session: " + err.message);
             }
@@ -83,6 +97,7 @@
                 box-shadow: 0 4px 12px rgba(0,0,0,0.2);
                 z-index: 9999;
                 transition: transform 0.2s;
+                font-family: "Lexend", sans-serif;
             `;
             btn.addEventListener("mouseenter", () => btn.style.transform = "scale(1.1)");
             btn.addEventListener("mouseleave", () => btn.style.transform = "scale(1.0)");
@@ -106,7 +121,7 @@
                         height: 500px;
                         display: flex;
                         flex-direction: column;
-                        font-family: "Inter", sans-serif;
+                        font-family: "Lexend", sans-serif;
                         border-radius: 12px;
                         overflow: hidden;
                         box-shadow: 0 8px 24px rgba(0,0,0,0.2);
@@ -124,6 +139,7 @@
                         display: flex;
                         justify-content: space-between;
                         align-items: center;
+                        font-family: "Lexend", sans-serif;
                     }
                     #chat-widget.light #chat-header { background: #007bff; color: #fff; }
                     #chat-widget.dark #chat-header { background: #333; color: #f5f5f5; }
@@ -149,6 +165,7 @@
                         border-radius: 10px;
                         max-width: 75%;
                         line-height: 1.4;
+                        font-family: "Lexend", sans-serif;
                     }
                     .msg.user { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
                     .msg.assistant { background: #f1f1f1; color: black; align-self: flex-start; border-bottom-left-radius: 2px; }
@@ -168,7 +185,8 @@
                         border-top: 1px solid #ccc;
                         padding: 8px;
                         gap: 8px;
-                        background: inherit; /* so it matches the theme background */
+                        background: inherit;
+                        font-family: "Lexend", sans-serif;
                     }
                     #chat-input {
                         flex: 1;
@@ -177,6 +195,7 @@
                         border-radius: 20px;
                         font-size: 14px;
                         outline: none;
+                        font-family: "Lexend", sans-serif;
                     }
                     #chat-widget.light #chat-input { background: #f9f9f9; color: #000; }
                     #chat-widget.dark #chat-input { background: #2c2c2c; color: #f5f5f5; }
@@ -189,11 +208,12 @@
                         border-radius: 20px;
                         cursor: pointer;
                         transition: background 0.2s;
+                        font-family: "Lexend", sans-serif;
                     }
                     #chat-send:hover { background: #0056b3; }
                 </style>
                 <div id="chat-header">
-                    <span>💬 Assistant</span>
+                    <span id="chat-title">💬 ${this.title}</span>
                     <span id="chat-close">&times;</span>
                 </div>
                 <div id="chat-messages"></div>
