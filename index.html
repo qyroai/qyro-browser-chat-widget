@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Embedded Chat</title>
+</head>
+<body>
+<script src="/js/chat-widget.js"></script>
+<script>
+    initChatWidget({
+        baseUrl: "http://localhost:3000",
+        assistantId: "68bcf8d9ef381744eced70b4",
+        theme: "light",                           // "light" (default) or "dark"
+        getToken: async () => {
+            return "eyJhbGciOiJIUzI1NiIsImtpZCI6IjY4YmQxZjFmZTViY2MzYmViNjYyOGEyZCIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ7XCJ1c2VySWRcIjogXCIxMjNcIn0iLCJvcmdhbml6YXRpb25faWQiOiI2OGJiMGFiNWZlYzIyODU4ZTE1YTdiMzEiLCJhcGlfa2V5X2lkIjoiNjhiZDFmMWZlNWJjYzNiZWI2NjI4YTJkIiwiaWF0IjoxNzU3MjI2NzE5LCJleHAiOjE3NTk4MTg3MTksInR5cGUiOiJjbGllbnQiLCJpc3MiOiI2OGJkMWYxZmU1YmNjM2JlYjY2MjhhMmQiLCJhdWQiOiJxeXJvIiwianRpIjoiNjZmYWQ4OWEtNTA0ZS00NGNlLTlkZDItNmZjODViNmE3MmNhIn0.6_5umc5MdhfWPEv9zWUcW9HmrvgQYt1E1fOJ1cp5Y7w"
+        }
+    });
+</script>
+
+</body>
+</html>
