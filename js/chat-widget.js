@@ -9,6 +9,7 @@
             this.theme = theme;
             this.title = title || "Chat Assistant";
             this.welcomeMessage = welcomeMessage || "👋 Hi! How can I help you today?";
+            this.typingEl = null; // typing indicator element
 
             this._injectFont();
             this._createLauncher();
@@ -43,7 +44,7 @@
                 const data = await res.json();
                 this.sessionId = data.id;
 
-                // Show welcome message (instead of the old "✅ Session started")
+                // Show welcome message
                 this._appendMessage("system", this.welcomeMessage);
             } catch (err) {
                 this._appendMessage("system", "❌ Failed to initialize session: " + err.message);
@@ -58,6 +59,9 @@
 
             this._appendMessage("user", message);
 
+            // Show typing indicator
+            this._showTyping();
+
             const res = await fetch(`${this.baseUrl}/client/api/v1/assistants/${this.assistantId}/sessions/${this.sessionId}/chat`, {
                 method: "POST",
                 headers: {
@@ -67,6 +71,9 @@
                 body: JSON.stringify({ message })
             });
 
+            // Remove typing indicator when response comes
+            this._hideTyping();
+
             if (!res.ok) {
                 this._appendMessage("system", "❌ Failed to send message.");
                 return;
@@ -74,6 +81,30 @@
 
             const messages = await res.json();
             messages.forEach(msg => this._appendMessage(msg.role, msg.content));
+        }
+
+        _showTyping() {
+            if (this.typingEl) return; // already showing
+            const div = document.createElement("div");
+            div.classList.add("msg", "assistant", "typing");
+            div.innerHTML = `
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            `;
+            this.messagesEl.appendChild(div);
+            this.typingEl = div;
+
+            requestAnimationFrame(() => {
+                this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+            });
+        }
+
+        _hideTyping() {
+            if (this.typingEl) {
+                this.typingEl.remove();
+                this.typingEl = null;
+            }
         }
 
         _createLauncher() {
@@ -127,9 +158,7 @@
                         box-shadow: 0 8px 24px rgba(0,0,0,0.2);
                         z-index: 9999;
                     }
-                    #chat-widget.hidden {
-                        display: none !important;
-                    }
+                    #chat-widget.hidden { display: none !important; }
                     #chat-widget.light { background: #fff; border: 1px solid #ddd; color: #000; }
                     #chat-widget.dark { background: #1e1e1e; border: 1px solid #444; color: #f5f5f5; }
 
@@ -144,10 +173,7 @@
                     #chat-widget.light #chat-header { background: #007bff; color: #fff; }
                     #chat-widget.dark #chat-header { background: #333; color: #f5f5f5; }
 
-                    #chat-close {
-                        cursor: pointer;
-                        font-size: 18px;
-                    }
+                    #chat-close { cursor: pointer; font-size: 18px; }
                     #chat-messages {
                         flex: 1;
                         padding: 12px;
@@ -175,6 +201,28 @@
                     #chat-widget.dark .msg.assistant { background: #2c2c2c; color: #f5f5f5; }
                     #chat-widget.dark .msg.system { background: #5a3c00; color: #ffd966; }
                     #chat-widget.dark .msg.tool { background: #234d20; color: #a8e6a3; }
+
+                    /* Typing indicator */
+                    .msg.typing {
+                        display: flex;
+                        gap: 4px;
+                        align-items: center;
+                    }
+                    .msg.typing .dot {
+                        width: 6px;
+                        height: 6px;
+                        background: #999;
+                        border-radius: 50%;
+                        display: inline-block;
+                        animation: blink 1.4s infinite both;
+                    }
+                    .msg.typing .dot:nth-child(2) { animation-delay: 0.2s; }
+                    .msg.typing .dot:nth-child(3) { animation-delay: 0.4s; }
+                    @keyframes blink {
+                        0% { opacity: .2; }
+                        20% { opacity: 1; }
+                        100% { opacity: .2; }
+                    }
 
                     #chat-input-area {
                         position: absolute;
@@ -239,7 +287,6 @@
 
         _toggleChat(forceOpen) {
             const isOpen = !this.container.classList.contains("hidden");
-
             if (forceOpen === false || isOpen) {
                 this.container.classList.add("hidden");
             } else {
