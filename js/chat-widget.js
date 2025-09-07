@@ -9,9 +9,10 @@
             this.theme = theme;
             this.title = title || "Chat Assistant";
             this.welcomeMessage = welcomeMessage || "👋 Hi! How can I help you today?";
-            this.typingEl = null; // typing indicator element
+            this.typingEl = null;
 
             this._injectFont();
+            this._injectMarkdownLib();
             this._createLauncher();
             this._createUI();
             this._applyTheme();
@@ -27,10 +28,18 @@
             }
         }
 
+        _injectMarkdownLib() {
+            if (!document.getElementById("marked-lib")) {
+                const script = document.createElement("script");
+                script.id = "marked-lib";
+                script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
+                document.head.appendChild(script);
+            }
+        }
+
         async _initSession() {
             try {
                 this.token = await this.getToken();
-
                 const res = await fetch(`${this.baseUrl}/client/api/v1/assistants/${this.assistantId}/sessions`, {
                     method: "POST",
                     headers: {
@@ -44,7 +53,6 @@
                 const data = await res.json();
                 this.sessionId = data.id;
 
-                // Show welcome message
                 this._appendMessage("system", this.welcomeMessage);
             } catch (err) {
                 this._appendMessage("system", "❌ Failed to initialize session: " + err.message);
@@ -58,8 +66,6 @@
             }
 
             this._appendMessage("user", message);
-
-            // Show typing indicator
             this._showTyping();
 
             const res = await fetch(`${this.baseUrl}/client/api/v1/assistants/${this.assistantId}/sessions/${this.sessionId}/chat`, {
@@ -71,7 +77,6 @@
                 body: JSON.stringify({ message })
             });
 
-            // Remove typing indicator when response comes
             this._hideTyping();
 
             if (!res.ok) {
@@ -80,11 +85,11 @@
             }
 
             const messages = await res.json();
-            messages.forEach(msg => this._appendMessage(msg.role, msg.content));
+            messages.forEach(msg => this._appendMessage(msg.role, msg.content, true));
         }
 
         _showTyping() {
-            if (this.typingEl) return; // already showing
+            if (this.typingEl) return;
             const div = document.createElement("div");
             div.classList.add("msg", "assistant", "typing");
             div.innerHTML = `
@@ -192,6 +197,7 @@
                         max-width: 75%;
                         line-height: 1.4;
                         font-family: "Lexend", sans-serif;
+                        word-wrap: break-word;
                     }
                     .msg.user { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
                     .msg.assistant { background: #f1f1f1; color: black; align-self: flex-start; border-bottom-left-radius: 2px; }
@@ -202,12 +208,22 @@
                     #chat-widget.dark .msg.system { background: #5a3c00; color: #ffd966; }
                     #chat-widget.dark .msg.tool { background: #234d20; color: #a8e6a3; }
 
-                    /* Typing indicator */
-                    .msg.typing {
-                        display: flex;
-                        gap: 4px;
-                        align-items: center;
+                    /* Markdown styling */
+                    .msg.assistant pre, .msg.assistant code {
+                        background: #eee;
+                        padding: 2px 4px;
+                        border-radius: 4px;
+                        font-family: monospace;
+                        font-size: 13px;
                     }
+                    #chat-widget.dark .msg.assistant pre, 
+                    #chat-widget.dark .msg.assistant code {
+                        background: #333;
+                        color: #f5f5f5;
+                    }
+
+                    /* Typing indicator */
+                    .msg.typing { display: flex; gap: 4px; align-items: center; }
                     .msg.typing .dot {
                         width: 6px;
                         height: 6px;
@@ -302,10 +318,16 @@
             this._sendMessage(message);
         }
 
-        _appendMessage(role, content) {
+        _appendMessage(role, content, renderMarkdown = false) {
             const div = document.createElement("div");
             div.classList.add("msg", role);
-            div.textContent = content;
+
+            if (renderMarkdown && role === "assistant" && window.marked) {
+                div.innerHTML = marked.parse(content);
+            } else {
+                div.textContent = content;
+            }
+
             this.messagesEl.appendChild(div);
 
             requestAnimationFrame(() => {
