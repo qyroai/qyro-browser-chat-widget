@@ -3,14 +3,14 @@ Browser Chat Widget SDK
 
 ### CDN
 
-```html5
+```html
 <script src="https://cdn.jsdelivr.net/gh/qyroai/qyro-browser-chat-widget/js/chat-widget.js"></script>
 ```
 
 ### Example Usage
 
 
-```html5
+```html
 
 <!doctype html>
 <html lang="en">
