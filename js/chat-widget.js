@@ -68,24 +68,42 @@
             this._appendMessage("user", message);
             this._showTyping();
 
-            const res = await fetch(`${this.baseUrl}/client/api/v1/assistants/${this.assistantId}/sessions/${this.sessionId}/chat`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${this.token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ message })
-            });
+            // 🔒 Disable input while waiting
+            this.inputEl.disabled = true;
+            this.sendBtn.disabled = true;
+            this.sendBtn.style.opacity = "0.6"; // optional styling to show disabled state
 
-            this._hideTyping();
+            try {
+                const res = await fetch(
+                    `${this.baseUrl}/client/api/v1/assistants/${this.assistantId}/sessions/${this.sessionId}/chat`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${this.token}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ message })
+                    }
+                );
 
-            if (!res.ok) {
-                this._appendMessage("system", "❌ Failed to send message.");
-                return;
+                this._hideTyping();
+
+                if (!res.ok) {
+                    this._appendMessage("system", "❌ Failed to send message.");
+                } else {
+                    const messages = await res.json();
+                    messages.forEach(msg => this._appendMessage(msg.role, msg.content, true));
+                }
+            } catch (err) {
+                this._hideTyping();
+                this._appendMessage("system", "❌ Error: " + err.message);
+            } finally {
+                // 🔓 Re-enable input after server responds
+                this.inputEl.disabled = false;
+                this.sendBtn.disabled = false;
+                this.sendBtn.style.opacity = "1";
+                this.inputEl.focus();
             }
-
-            const messages = await res.json();
-            messages.forEach(msg => this._appendMessage(msg.role, msg.content, true));
         }
 
         _showTyping() {
